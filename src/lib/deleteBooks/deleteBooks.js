@@ -16,3 +16,14 @@ export const deleteBooks =async(id)=>{
     }
     
 }
+export const deleteCopies = async (id) => {
+  const res = await fetch(`${process.env.BACKEND_URL}/category/${id}`, {
+    method: 'DELETE',
+  })
+  const data = await res.json().catch(() => ({}))
+
+  if (!res.ok) return { error: data.error || 'Not deleted' }
+
+  revalidatePath('/copies')
+  return data
+}
