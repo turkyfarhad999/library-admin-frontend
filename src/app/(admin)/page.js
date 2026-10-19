@@ -4,7 +4,7 @@ import Image from "next/image";
 
 export default async function Home() {
   const booksData= await getBook()
-  
+  // console.log(booksData)
   const copies = await  getCopies()
   const loans= await getLoans()
   const users= await getUsers()

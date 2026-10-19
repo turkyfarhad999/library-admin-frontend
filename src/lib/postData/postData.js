@@ -1,4 +1,7 @@
 'use server'
+
+import { revalidatePath } from "next/cache"
+
 export const postNewBook =async(formdata)=>{
 const res= await fetch(`${process.env.BACKEND_URL}/books`,{
     method: 'POST',
@@ -6,5 +9,23 @@ const res= await fetch(`${process.env.BACKEND_URL}/books`,{
     body:JSON.stringify(formdata)
 })
 const data= await res.json()
+if(res.ok){
+    revalidatePath('/books')
+}
 return data
 }
+export const postCopies = async ({ bookId, count }) => {
+  const res = await fetch(
+    `${process.env.BACKEND_URL}/books/${Number(bookId)}/copies`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ count: Number(count) }),
+    }
+  );
+  const data = await res.json();
+  if(res.ok){
+    revalidatePath('/books')
+}
+  return data;
+};

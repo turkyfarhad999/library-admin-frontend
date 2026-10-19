@@ -11,7 +11,7 @@ const page = async() => {
    
     return (
         <div>
-            <AddBook></AddBook>
+            <AddBook books={books}></AddBook>
             <Booktable books={books}></Booktable>
         </div>
     );

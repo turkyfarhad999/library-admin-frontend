@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }) {
   if (!session || session.user.role !== "admin") {
     redirect("/login");
   }
- console.log(session)
+//  console.log(session)
 
   return <Sidebar>{children}</Sidebar>;
 }
