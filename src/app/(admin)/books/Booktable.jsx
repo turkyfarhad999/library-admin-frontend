@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown, Pencil, Search, Trash2 } from 'lucide-react';
 import { editBooks } from '@/lib/editBooks/editBooks';
+import { deleteBooks } from '@/lib/deleteBooks/deleteBooks';
 
 // key = schema-র ফিল্ডের নাম, label = টেবিলে যা দেখাবে
 const columns = [
@@ -80,8 +81,22 @@ const Booktable = ({ books = [] }) => {
     };
 
     // ---------- এই দুটি ফাংশন আপনি নিজে লিখবেন ----------
-    const handleDelete = () => {
-        // delete-এর কাজ আপনি এখানে লিখবেন
+    const handleDelete = async() => {
+        
+        const data=deleteBook.Copies;
+       const identity=data.every(d=>d.Status==='ACTIVE')
+       
+       if(!identity){
+        showToast('error','Some of the product are on loan so cannot be deleted')
+        setDeleteBook(null)
+        return
+       }
+       const item=deleteBook?.id
+       console.log(item)
+       await deleteBooks(item)
+       setDeleteBook(null)
+       showToast('success',`${deleteBook.Name} is successfully deleted`)
+       
     };
 
     const handleEditSubmit = async (e) => {
