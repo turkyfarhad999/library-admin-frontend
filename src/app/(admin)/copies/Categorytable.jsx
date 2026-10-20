@@ -15,7 +15,7 @@ const columns = [
 ];
 
 // schema-র BookStatus enum
-const STATUSES = ['ACTIVE', 'ONLOAN', 'LOST'];
+const STATUSES = ['ACTIVE', 'LOST'];
 
 const statusBadge = (status) =>
     status === 'ACTIVE' ? 'badge-success' : status === 'LOST' ? 'badge-error' : 'badge-warning';
