@@ -8,7 +8,10 @@ export const deleteBooks =async(id)=>{
         }
     )
     const data = await res.json()
-    if(res.ok){revalidatePath('/books')
+    if(res.ok){
+         revalidatePath('/copies')
+  revalidatePath('/books')
+  revalidatePath('/')
         return data
     }
     else{
@@ -25,5 +28,8 @@ export const deleteCopies = async (id) => {
   if (!res.ok) return { error: data.error || 'Not deleted' }
 
   revalidatePath('/copies')
+  revalidatePath('/books')
+  revalidatePath('/')
+  
   return data
 }

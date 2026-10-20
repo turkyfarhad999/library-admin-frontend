@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowUpDown, Search, X } from 'lucide-react';
+import { returnLoan, payLoanFine } from '@/lib/editBooks/editBooks';
 
 const FINE_PER_DAY = 5;
 
@@ -73,12 +74,12 @@ function FineCell({ loan }) {
 
 export default function LoanTable({ loans = [] }) {
   const [toast, setToast] = useState(null); // { type: 'success' | 'error', message }
-  const [returnLoan, setReturnLoan] = useState(null); // loan being returned (modal)
+  const [loanToReturn, setLoanToReturn] = useState(null); // loan shown in the return modal
   const [returnDate, setReturnDate] = useState(''); // "YYYY-MM-DD"
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [sort, setSort] = useState({ key: 'loanDate', dir: 'desc' }); // dir: 'asc' | 'desc'
-  // TODO: submitting state for the return / pay fine actions
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!toast) return;
@@ -153,27 +154,64 @@ export default function LoanTable({ loans = [] }) {
   }
 
   function openReturnModal(loan) {
-    setReturnLoan(loan);
+    setLoanToReturn(loan);
     setReturnDate(todayStr());
   }
 
   function closeReturnModal() {
-    setReturnLoan(null);
+    if (submitting) return;
+    setLoanToReturn(null);
     setReturnDate('');
   }
 
   // fine preview inside the modal
-  const modalLateDays = lateDaysBetween(returnLoan?.returnDate, returnDate);
+  const modalLateDays = lateDaysBetween(loanToReturn?.returnDate, returnDate);
   const modalFine = modalLateDays * FINE_PER_DAY;
 
-  // TODO: async function handleReturn(payNow) {
-  //   payNow === true  -> return + fine cleared (findeDue = false)
-  //   payNow === false -> return + fine stays unpaid (findeDue = true)
-  //   use returnLoan?.id, returnDate, modalFine; then closeReturnModal() + success toast,
-  //   on error keep modal open + error toast
-  // }
+  async function handleReturn(payNow) {
+    if (submitting) return;
+    if (!returnDate) {
+      setToast({ type: 'error', message: 'Return date is required.' });
+      return;
+    }
 
-  // TODO: async function handlePayFine(loanId) { ... }
+    const owed = modalFine > 0;
+
+    setSubmitting(true);
+    const result = await returnLoan({
+      loanId: loanToReturn?.id,
+      returnDate,
+      payNow,
+    });
+    setSubmitting(false);
+
+    if (result?.error) {
+      setToast({ type: 'error', message: result.error }); // modal stays open
+      return;
+    }
+
+    setLoanToReturn(null);
+    setReturnDate('');
+    setToast({
+      type: 'success',
+      message:
+        owed && !payNow ? 'Book returned. Fine is still due.' : 'Book returned successfully.',
+    });
+  }
+
+  async function handlePayFine(loanId) {
+    if (submitting) return;
+
+    setSubmitting(true);
+    const result = await payLoanFine(loanId);
+    setSubmitting(false);
+
+    if (result?.error) {
+      setToast({ type: 'error', message: result.error });
+      return;
+    }
+    setToast({ type: 'success', message: 'Fine marked as paid.' });
+  }
 
   return (
     <div>
@@ -290,14 +328,19 @@ export default function LoanTable({ loans = [] }) {
                         <button
                           type="button"
                           className="btn btn-primary btn-xs"
+                          disabled={submitting}
                           onClick={() => openReturnModal(loan)}
                         >
                           Return
                         </button>
                       )}
-                      {/* TODO: onClick handlePayFine(loan.id) */}
                       {isReturned && loan?.findeDue && (
-                        <button type="button" className="btn btn-warning btn-xs">
+                        <button
+                          type="button"
+                          className="btn btn-warning btn-xs"
+                          disabled={submitting}
+                          onClick={() => handlePayFine(loan.id)}
+                        >
                           Mark fine paid
                         </button>
                       )}
@@ -320,7 +363,7 @@ export default function LoanTable({ loans = [] }) {
       </div>
 
       {/* ---------- Return modal ---------- */}
-      {returnLoan && (
+      {loanToReturn && (
         <dialog className="modal modal-open">
           <div className="modal-box max-w-md">
             <div className="mb-4 flex items-center justify-between">
@@ -336,10 +379,10 @@ export default function LoanTable({ loans = [] }) {
 
             <div className="mb-4 space-y-1 text-sm">
               <div>
-                <b>{returnLoan?.copies?.book?.Name}</b> (Copy #{returnLoan?.copies?.id})
+                <b>{loanToReturn?.copies?.book?.Name}</b> (Copy #{loanToReturn?.copies?.id})
               </div>
               <div className="opacity-70">
-                {returnLoan?.user?.name} · Due: {fmtDate(returnLoan?.returnDate)}
+                {loanToReturn?.user?.name} · Due: {fmtDate(loanToReturn?.returnDate)}
               </div>
             </div>
 
@@ -351,7 +394,7 @@ export default function LoanTable({ loans = [] }) {
               type="date"
               className="input input-bordered w-full"
               value={returnDate}
-              min={dhakaDay.format(new Date(returnLoan?.CreatedDate))}
+              min={dhakaDay.format(new Date(loanToReturn?.CreatedDate))}
               onChange={(e) => setReturnDate(e.target.value)}
             />
 
@@ -371,18 +414,32 @@ export default function LoanTable({ loans = [] }) {
             <div className="modal-action">
               {modalFine > 0 ? (
                 <>
-                  {/* TODO: onClick handleReturn(false) */}
-                  <button type="button" className="btn btn-outline">
+                  <button
+                    type="button"
+                    className="btn btn-outline"
+                    disabled={submitting}
+                    onClick={() => handleReturn(false)}
+                  >
                     Pay later
                   </button>
-                  {/* TODO: onClick handleReturn(true) */}
-                  <button type="button" className="btn btn-primary">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={submitting}
+                    onClick={() => handleReturn(true)}
+                  >
+                    {submitting && <span className="loading loading-spinner loading-sm" />}
                     Pay now
                   </button>
                 </>
               ) : (
-                /* TODO: onClick handleReturn(true), nothing is owed */
-                <button type="button" className="btn btn-primary">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={submitting}
+                  onClick={() => handleReturn(true)}
+                >
+                  {submitting && <span className="loading loading-spinner loading-sm" />}
                   Confirm return
                 </button>
               )}

@@ -20,7 +20,7 @@ const menu = [
   { name: 'Copies', href: '/copies', icon: BookCopy },
   { name: 'Members', href: '/members', icon: Users },
   { name: 'Loans', href: '/loans', icon: ArrowLeftRight },
-  { name: 'Fines', href: '/fines', icon: Receipt },
+
 ];
 
 const Sidebar = ({ children }) => {

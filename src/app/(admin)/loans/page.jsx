@@ -1,14 +1,14 @@
 import { Suspense } from 'react';
 import AddLoan from './AddLoan';
 import LoanTable from './LoanTable';
-import { getLoans } from '@/lib/getdata/getBooks';
+import { getBook, getLoans, getUsers } from '@/lib/getdata/getBooks';
 
 async function LoansContent() {
   // TODO: fetch loans, members, books (Promise.all)
   const loans = await getLoans()
   console.log(loans)
-  const members = [];
-  const books = [];
+  const members = await getUsers();
+  const books = await getBook();
 
   return (
     <>
